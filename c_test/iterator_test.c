@@ -28,7 +28,13 @@ int main(){
     reduce(red,full,map,4);
     assert(red[0]==1 && red[1]==5 && red[2]==4);
 
-    basis_type bas; bas.nat=3; bas.nsh=4; int sh2at_arr[4]={0,1,1,2}; bas.sh2at=sh2at_arr; 
+    basis_type bas; bas.nat=3; bas.nsh=4; bas.nao=0;
+    int ish_at_arr[3]={0,1,3};
+    int nsh_at_arr[3]={1,2,1};
+    int iao_sh_arr[4]={0,0,0,0};
+    int nao_sh_arr[4]={0,0,0,0};
+    bas.ish_at=ish_at_arr; bas.nsh_at=nsh_at_arr;
+    bas.iao_sh=iao_sh_arr; bas.nao_sh=nao_sh_arr; bas.ao2at=NULL;
     double qsh[8]; for(int i=0;i<8;i++) qsh[i]=i+1;
     double qat[6];
     get_qat_from_qsh(&bas,qsh,qat,4,2);

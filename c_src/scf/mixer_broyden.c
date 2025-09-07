@@ -60,9 +60,16 @@ static void broyden_step(broyden_mixer *self, int info[1]){
         return;
     }
     int limit = itn < mem ? itn : mem;
+    int it1p = it1;
+    double wfac=0.01, minw=1.0, maxw=100000.0;
+    double w=0.0;
+    for(int i=0;i<n;i++) w += self->dq[i]*self->dq[i];
+    w = sqrt(w);
+    if(w > (wfac/maxw)) w = wfac/w; else w = maxw;
+    if(w < minw) w = minw;
+    self->omega[it1p] = w;
     double *beta = malloc(sizeof(double)*limit*limit);
     double *c = malloc(sizeof(double)*limit);
-    int it1p = it1;
     for(int i=0;i<n;i++){
         self->df[it1p*n+i] = self->dq[i] - self->dqlast[i];
     }
@@ -78,16 +85,17 @@ static void broyden_step(broyden_mixer *self, int info[1]){
         self->a[it1p*mem+jp]=dot;
         double dot2=0.0;
         for(int i=0;i<n;i++) dot2+= self->df[jp*n+i]*self->dq[i];
-        c[jp-(itn-limit+1)] = self->omega[jp]*dot2;
+        int cidx = j - (itn - limit + 1);
+        c[cidx] = self->omega[jp]*dot2;
     }
     for(int j=itn-limit+1;j<=itn;j++){
         int jp=(j-1)%mem;
+        int col = j - (itn - limit + 1);
         for(int i=0;i<limit;i++){
-            int ip=(itn-limit+1+i-1)%mem;
-            beta[i*limit+(jp-(itn-limit+1))] = self->omega[ip]*self->omega[jp]*self->a[ip*mem+jp];
+            int ip=(itn - limit + i)%mem;
+            beta[i*limit+col] = self->omega[ip]*self->omega[jp]*self->a[ip*mem+jp];
         }
-        int idx=jp-(itn-limit+1);
-        beta[idx*limit+idx] += 0.0001; /* omega0^2 */
+        beta[col*limit+col] += 0.0001; /* omega0^2 */
     }
     lineq(limit, beta, c);
     for(int i=0;i<n;i++){
@@ -98,7 +106,8 @@ static void broyden_step(broyden_mixer *self, int info[1]){
     for(int i=0;i<n;i++) self->q_in[i] += self->damp*self->dq[i];
     for(int j=itn-limit+1;j<=itn;j++){
         int jp=(j-1)%mem;
-        double coeff = self->omega[jp]*c[jp-(itn-limit+1)];
+        int col = j - (itn - limit + 1);
+        double coeff = self->omega[jp]*c[col];
         for(int i=0;i<n;i++) self->q_in[i] -= coeff*self->u[jp*n+i];
     }
     free(beta); free(c);
